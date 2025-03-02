@@ -1,0 +1,8 @@
+test.py
+*.dll
+/include
+/Lib*
+/libs
+/share
+/Tools
+/conda-meta
