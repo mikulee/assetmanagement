@@ -1,0 +1,111 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.core.validators import validate_ipv46_address
+from django.urls import reverse
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, default='Default Customer Name')
+    company = models.CharField(max_length=100, blank=True)
+    
+    def __str__(self):
+        return self.name
+
+class Asset(models.Model):
+    ASSET_TYPES = (
+        ('server', 'Server'),
+        ('network', 'Network Device'),
+        ('storage', 'Storage System'),
+    )
+    
+    CRITICALITY_CHOICES = (
+        ('critical', 'Critical'),
+        ('high', 'High'),
+        ('normal', 'Normal'),
+        ('low', 'Low'),
+        ('test', 'Test'),
+    )
+
+    PATCH_CYCLE_CHOICES = [
+        (14, '14 days'),
+        (30, '30 days'),
+        (60, '60 days'),
+        (90, '90 days'),
+        (180, '180 days'),
+    ]
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    asset_type = models.CharField(max_length=50, choices=ASSET_TYPES)
+    ip_address = models.GenericIPAddressField()
+    monitoring_status = models.BooleanField(default=True)
+    last_checked = models.DateTimeField(auto_now=True)
+    configuration = models.JSONField(default=dict)  # For log analysis settings
+    status = models.BooleanField(default=True, verbose_name='Active')
+    business_criticality = models.CharField(
+        max_length=20,
+        choices=CRITICALITY_CHOICES,
+        default='normal',
+        verbose_name='Business Criticality'
+    )
+    patch_cycle = models.PositiveIntegerField(
+        default=30,
+        verbose_name='Patch Cycle (days)'
+    )
+
+    class Meta:
+        ordering = ['-last_checked']
+        unique_together = ['customer', 'name']
+    
+    def clean(self):
+        validate_ipv46_address(self.ip_address)
+    
+    def get_absolute_url(self):
+        return reverse('asset-detail', kwargs={'pk': self.pk})
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_asset_type_display()})"
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # Add any additional fields you want for the user profile
+    department = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    from .models import UserProfile
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    try:
+        instance.userprofile.save()
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def create_customer(sender, instance, created, **kwargs):
+    if created:
+        Customer.objects.create(
+            user=instance,
+            name=instance.get_full_name() or instance.username
+        )
+
+@receiver(post_save, sender=User)
+def save_customer(sender, instance, **kwargs):
+    try:
+        instance.customer.save()
+    except Customer.DoesNotExist:
+        Customer.objects.create(
+            user=instance,
+            name=instance.get_full_name() or instance.username
+        )
+
+# Create your models here.

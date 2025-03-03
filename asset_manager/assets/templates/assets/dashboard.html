@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Asset Dashboard</h2>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'asset-create' %}" class="btn btn-primary">Add New Asset</a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Search assets..." value="{{ current_filters.search }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="asset_type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for value, label in asset_types %}
+                        <option value="{{ value }}" {% if value == current_filters.asset_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="criticality" class="form-select">
+                        <option value="">All Criticality</option>
+                        {% for value, label in criticality_choices %}
+                        <option value="{{ value }}" {% if value == current_filters.criticality %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="sort" class="form-select">
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name ↑</option>
+                        <option value="-name" {% if current_filters.sort == '-name' %}selected{% endif %}>Name ↓</option>
+                        <option value="-last_checked" {% if current_filters.sort == '-last_checked' %}selected{% endif %}>Last Checked</option>
+                        <option value="business_criticality" {% if current_filters.sort == 'business_criticality' %}selected{% endif %}>Criticality ↑</option>
+                        <option value="-business_criticality" {% if current_filters.sort == '-business_criticality' %}selected{% endif %}>Criticality ↓</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assets Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>IP Address</th>
+                    <th>Criticality</th>
+                    <th>Status</th>
+                    <th>Last Checked</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in assets %}
+                <tr>
+                    <td>{{ asset.name }}</td>
+                    <td>{{ asset.get_asset_type_display }}</td>
+                    <td>{{ asset.ip_address }}</td>
+                    <td>
+                        <span class="badge {% if asset.business_criticality == 'critical' %}bg-danger{% elif asset.business_criticality == 'high' %}bg-warning{% else %}bg-info{% endif %}">
+                            {{ asset.get_business_criticality_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if asset.status %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if asset.status %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ asset.last_checked|naturaltime }}</td>
+                    <td>
+                        <a href="{% url 'asset-update' asset.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a href="{% url 'asset-delete' asset.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">No assets found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
