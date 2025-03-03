@@ -1,17 +1,24 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser, Group, Permission
 from django.core.validators import validate_ipv46_address
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, default='Default Customer Name')
-    company = models.CharField(max_length=100, blank=True)
-    
+    display_name = models.CharField(max_length=100, default="Customer A")
+    legal_name = models.CharField(max_length=200, default="A real big company")
+    contact_person = models.CharField(max_length=100, default="Mike Cunt")
+    created_at = models.DateTimeField(auto_now_add=True)  # Change back after migration
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return self.name
+        return self.display_name
+
+    class Meta:
+        ordering = ['display_name']
 
 class Asset(models.Model):
     ASSET_TYPES = (
@@ -76,6 +83,29 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s profile"
+
+class UserRole(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Administrator'),
+        ('manager', 'Manager'),
+        ('user', 'User'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    customers = models.ManyToManyField(Customer, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"
+
+    class Meta:
+        permissions = [
+            ("can_manage_users", "Can manage users"),
+            ("can_assign_customers", "Can assign customers to users"),
+            ("can_view_all_customers", "Can view all customers"),
+        ]
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

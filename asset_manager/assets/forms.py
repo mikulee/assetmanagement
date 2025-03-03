@@ -1,8 +1,16 @@
 from django import forms
-from .models import Asset
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from .models import Asset, Customer, UserRole
 import json
 
 class AssetForm(forms.ModelForm):
+    customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label=None  # Removes empty choice
+    )
+    
     configuration = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
@@ -32,6 +40,7 @@ class AssetForm(forms.ModelForm):
     class Meta:
         model = Asset
         fields = [
+            'customer',  # Add customer to the beginning of fields list
             'name', 
             'asset_type', 
             'ip_address', 
@@ -100,3 +109,27 @@ class AssetForm(forms.ModelForm):
                 raise
             except Exception as e:
                 raise forms.ValidationError(f"Error processing configuration: {str(e)}")
+
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ['display_name', 'legal_name', 'contact_person']
+        widgets = {
+            'display_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'legal_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class UserCreateForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name']
+
+class UserRoleForm(forms.ModelForm):
+    class Meta:
+        model = UserRole
+        fields = ['role', 'customers']
+        widgets = {
+            'role': forms.Select(attrs={'class': 'form-control'}),
+            'customers': forms.SelectMultiple(attrs={'class': 'form-control'}),
+        }

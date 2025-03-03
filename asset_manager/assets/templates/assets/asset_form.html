@@ -2,51 +2,76 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>{% if form.instance.pk %}Edit Asset{% else %}New Asset{% endif %}</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.name.id_for_label }}" class="form-label">Name</label>
-                {{ form.name }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.asset_type.id_for_label }}" class="form-label">Asset Type</label>
-                {{ form.asset_type }}
-            </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title mb-0">
+                {% if form.instance.pk %}Edit Asset{% else %}New Asset{% endif %}
+            </h2>
         </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.business_criticality.id_for_label }}" class="form-label">Business Criticality</label>
-                {{ form.business_criticality }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.patch_cycle.id_for_label }}" class="form-label">Patch Cycle (days)</label>
-                {{ form.patch_cycle }}
-                <div class="mt-2">
-                    {{ form.patch_cycle_preset }}
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if user.is_staff %}
+                <div class="mb-3">
+                    <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                    {{ form.customer }}
+                    {% if form.customer.errors %}
+                    <div class="alert alert-danger mt-1">{{ form.customer.errors }}</div>
+                    {% endif %}
                 </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.ip_address.id_for_label }}" class="form-label">IP Address</label>
-                {{ form.ip_address }}
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="form-check mt-4">
-                    {{ form.status }}
-                    <label class="form-check-label" for="{{ form.status.id_for_label }}">Active</label>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="alert alert-danger mt-1">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.asset_type.id_for_label }}" class="form-label">Asset Type</label>
+                        {{ form.asset_type }}
+                        {% if form.asset_type.errors %}
+                        <div class="alert alert-danger mt-1">{{ form.asset_type.errors }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.business_criticality.id_for_label }}" class="form-label">Business Criticality</label>
+                        {{ form.business_criticality }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.patch_cycle.id_for_label }}" class="form-label">Patch Cycle (days)</label>
+                        {{ form.patch_cycle }}
+                        <div class="mt-2">
+                            {{ form.patch_cycle_preset }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.ip_address.id_for_label }}" class="form-label">IP Address</label>
+                        {{ form.ip_address }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            {{ form.status }}
+                            <label class="form-check-label" for="{{ form.status.id_for_label }}">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.configuration.id_for_label }}" class="form-label">Configuration</label>
+                    {{ form.configuration }}
+                    <div class="form-text">{{ form.configuration.help_text }}</div>
+                </div>
+                <div class="d-flex justify-content-between mt-3">
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
         </div>
-        <div class="mb-3">
-            <label for="{{ form.configuration.id_for_label }}" class="form-label">Configuration</label>
-            {{ form.configuration }}
-            <div class="form-text">{{ form.configuration.help_text }}</div>
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
-    </form>
+    </div>
 </div>
 {% endblock %}

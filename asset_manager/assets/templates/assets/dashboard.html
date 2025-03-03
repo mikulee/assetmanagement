@@ -19,6 +19,20 @@
                 <div class="col-md-3">
                     <input type="text" name="search" class="form-control" placeholder="Search assets..." value="{{ current_filters.search }}">
                 </div>
+                
+                {% if user.is_staff %}
+                <div class="col-md-2">
+                    <select name="customer" class="form-select">
+                        <option value="">All Customers</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.pk }}" {% if customer.pk|stringformat:"s" == current_filters.customer %}selected{% endif %}>
+                            {{ customer.display_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
                 <div class="col-md-2">
                     <select name="asset_type" class="form-select">
                         <option value="">All Types</option>
@@ -64,6 +78,9 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    {% if user.is_staff %}
+                    <th>Customer</th>
+                    {% endif %}
                     <th>Type</th>
                     <th>IP Address</th>
                     <th>Criticality</th>
@@ -76,6 +93,9 @@
                 {% for asset in assets %}
                 <tr>
                     <td>{{ asset.name }}</td>
+                    {% if user.is_staff %}
+                    <td>{{ asset.customer.display_name }}</td>
+                    {% endif %}
                     <td>{{ asset.get_asset_type_display }}</td>
                     <td>{{ asset.ip_address }}</td>
                     <td>
@@ -88,15 +108,17 @@
                             {% if asset.status %}Active{% else %}Inactive{% endif %}
                         </span>
                     </td>
-                    <td>{{ asset.last_checked|naturaltime }}</td>
+                    <td>{{ asset.last_checked|date:"Y-m-d H:i" }}</td>
                     <td>
-                        <a href="{% url 'asset-update' asset.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                        <a href="{% url 'asset-delete' asset.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        <div class="btn-group">
+                            <a href="{% url 'asset-update' asset.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'asset-delete' asset.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center">No assets found.</td>
+                    <td colspan="{% if user.is_staff %}8{% else %}7{% endif %}" class="text-center">No assets found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
