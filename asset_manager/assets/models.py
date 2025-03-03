@@ -11,7 +11,7 @@ class Customer(models.Model):
     display_name = models.CharField(max_length=100, default="Customer A")
     legal_name = models.CharField(max_length=200, default="A real big company")
     contact_person = models.CharField(max_length=100, default="Mike Cunt")
-    created_at = models.DateTimeField(auto_now_add=True)  # Change back after migration
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -102,9 +102,10 @@ class UserRole(models.Model):
 
     class Meta:
         permissions = [
-            ("can_manage_users", "Can manage users"),
-            ("can_assign_customers", "Can assign customers to users"),
-            ("can_view_all_customers", "Can view all customers"),
+            ("can_manage_users", "Can manage users"),  # Admin only
+            ("can_view_users", "Can view users list"),  # Admin and Manager
+            ("can_assign_customers", "Can assign customers to users"),  # Admin only
+            ("can_view_all_customers", "Can view all customers"),  # Admin and Manager
         ]
 
 @receiver(post_save, sender=User)
@@ -122,20 +123,41 @@ def save_user_profile(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def create_customer(sender, instance, created, **kwargs):
-    if created:
+    if created and not instance.is_staff:
         Customer.objects.create(
             user=instance,
-            name=instance.get_full_name() or instance.username
+            display_name=f"Customer {instance.username}",  # Changed from 'name'
+            legal_name=f"Company {instance.username}",
+            contact_person=instance.get_full_name() or instance.username
         )
 
 @receiver(post_save, sender=User)
 def save_customer(sender, instance, **kwargs):
     try:
-        instance.customer.save()
+        if not instance.is_staff and hasattr(instance, 'customer'):
+            instance.customer.save()
     except Customer.DoesNotExist:
-        Customer.objects.create(
+        if not instance.is_staff:
+            Customer.objects.create(
+                user=instance,
+                display_name=f"Customer {instance.username}",
+                legal_name=f"Company {instance.username}",
+                contact_person=instance.get_full_name() or instance.username
+            )
+
+@receiver(post_save, sender=User)
+def create_user_role(sender, instance, created, **kwargs):
+    if created:
+        UserRole.objects.create(
             user=instance,
-            name=instance.get_full_name() or instance.username
+            role='user'
         )
+
+@receiver(post_save, sender=User)
+def save_user_role(sender, instance, **kwargs):
+    try:
+        instance.userrole.save()
+    except UserRole.DoesNotExist:
+        UserRole.objects.create(user=instance, role='user')
 
 # Create your models here.
